@@ -22,7 +22,7 @@ jobs:
         run: |
           # Aqui é onde o usuário e a senha são criados
           $User = "Admin"
-          $Password = "P@ssw0rd2024!RDP"
+          $Password = "P@ssw0rd2024!R"
           
           # Cria o usuário
           net user $User $Password /add
