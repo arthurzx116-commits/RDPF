@@ -1,0 +1,58 @@
+name: RDP-PC-Forte
+
+on:
+  workflow_dispatch: # Permite iniciar manualmente pelo botão "Run workflow"
+
+jobs:
+  build:
+    runs-on: windows-latest 
+    timeout-minutes: 360 # Tempo máximo de 6 horas
+
+    steps:
+      - name: 1. Habilitar o RDP
+        shell: powershell
+        run: |
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+          Restart-Service TermService -Force
+
+      - name: 2. Criar Usuário e Senha (ADMIN)
+        shell: powershell
+        run: |
+          # Aqui é onde o usuário e a senha são criados
+          $User = "Admin"
+          $Password = "P@ssw0rd2024!RDP"
+          
+          # Cria o usuário
+          net user $User $Password /add
+          
+          # Adiciona o usuário ao grupo de Administradores
+          net localgroup Administrators $User /add
+          
+          Write-Host "Usuário $User criado com sucesso!"
+
+      - name: 3. Instalar o Ngrok (Túnel de Conexão)
+        shell: powershell
+        run: |
+          Invoke-WebRequest -Uri "https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+          Expand-Archive ngrok.zip -DestinationPath .
+          # Substitua SEU_TOKEN_AQUI pelo seu token do Ngrok (é grátis criar conta no site deles)
+          .\ngrok.exe config add-authtoken SEU_TOKEN_AQUI
+
+      - name: 4. Iniciar o Túnel e Manter Vivo
+        shell: powershell
+        run: |
+          Start-Process -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389" -NoNewWindow
+          Write-Host "Aguardando o túnel iniciar..."
+          Start-Sleep -Seconds 15
+          
+          Write-Host "=================================================="
+          Write-Host "Vá em: http://localhost:4040 para ver o link do túnel"
+          Write-Host "Procure por algo como: tcp://0.tcp.ngrok.io:12345"
+          Write-Host "Use esse endereço e a porta para conectar no RDP."
+          Write-Host "Usuário: Admin"
+          Write-Host "Senha: P@ssw0rd2024!RDP"
+          Write-Host "=================================================="
+          
+          while ($true) { Start-Sleep -Seconds 3600 }
